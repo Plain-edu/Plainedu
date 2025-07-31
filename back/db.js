@@ -26,13 +26,48 @@
 const mysql = require('mysql2/promise'); // Promise 기반 MySQL 드라이버
 require('dotenv').config(); // 환경 변수 로드
 
+// Railway DATABASE_URL 파싱 함수
+function parseDatabaseUrl(url) {
+    if (!url) return null;
+    const match = url.match(/mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+    if (!match) return null;
+    
+    return {
+        user: match[1],
+        password: match[2],
+        host: match[3],
+        port: parseInt(match[4]),
+        database: match[5]
+    };
+}
+
+// 연결 설정 결정
+let connectionConfig;
+
+if (process.env.DATABASE_URL) {
+    // Railway 환경에서는 DATABASE_URL 사용
+    const urlConfig = parseDatabaseUrl(process.env.DATABASE_URL);
+    connectionConfig = urlConfig || {
+        host: process.env.MYSQL_HOST,
+        port: process.env.MYSQL_PORT || 3306,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE
+    };
+} else {
+    // 로컬 환경에서는 개별 환경변수 사용
+    connectionConfig = {
+        host: process.env.DB_HOST,
+        port: 3306,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE
+    };
+}
+
 // 연결 풀 생성 (동시 연결 관리)
 const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST || process.env.DB_HOST,           // Railway: MYSQL_HOST, 로컬: DB_HOST
-    port: process.env.MYSQL_PORT || 3306,                         // Railway: MYSQL_PORT
-    user: process.env.MYSQL_USER || process.env.DB_USER,          // Railway: MYSQL_USER, 로컬: DB_USER
-    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD, // Railway: MYSQL_PASSWORD, 로컬: DB_PASSWORD
-    database: process.env.MYSQL_DATABASE || process.env.DB_DATABASE, // Railway: MYSQL_DATABASE, 로컬: DB_DATABASE
+    ...connectionConfig,
     waitForConnections: true,            // 연결 대기 허용
     connectionLimit: 10,                 // 최대 동시 연결 수
     queueLimit: 0                        // 대기열 제한 없음
@@ -42,12 +77,13 @@ const pool = mysql.createPool({
 pool.getConnection()
     .then(connection => {
         console.log('✅ MySQL 데이터베이스에 성공적으로 연결되었습니다.');
-        console.log(`📊 연결된 데이터베이스: ${process.env.DB_DATABASE}`);
+        console.log(`📊 연결된 데이터베이스: ${connectionConfig.database}`);
+        console.log(`🌐 호스트: ${connectionConfig.host}`);
         connection.release(); // 연결 반환
     })
     .catch(err => {
         console.error('❌ MySQL 데이터베이스 연결 실패:', err.message);
-        console.error('🔧 환경 변수 (.env 파일) 및 MySQL 서버 상태를 확인하세요.');
+        console.error('🔧 환경 변수 및 MySQL 서버 상태를 확인하세요.');
         process.exit(1); // 연결 실패 시 서버 종료
     });
 
