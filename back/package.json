@@ -1,0 +1,27 @@
+{
+  "name": "plain-edu-backend",
+  "version": "1.0.0",
+  "description": "Plain Edu Financial App Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step needed'",
+    "railway-start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["finance", "education", "api", "mysql"],
+  "author": "Plain Edu Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
