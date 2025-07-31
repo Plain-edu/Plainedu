@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+front/node_modules/
+back/node_modules/
 
 # Environment variables
 .env
@@ -24,6 +26,7 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+front/dist/
 
 # Vercel
 .vercel

@@ -1,0 +1,13 @@
+{
+  "name": "plainedu-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "cd front && npm install && npm run build",
+    "dev": "cd front && npm run dev",
+    "preview": "cd front && npm run preview"
+  },
+  "workspaces": [
+    "front"
+  ]
+}
