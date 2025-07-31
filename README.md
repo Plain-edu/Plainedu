@@ -5,12 +5,16 @@
 ## 프로젝트 구조
 
 ```
-plain/
-├── back/           # 백엔드 (Node.js + Express + MySQL)
-│   ├── server.js   # Express 서버 메인 파일
-│   ├── db.js       # MySQL 데이터베이스 연결 설정
-│   └── package.json
-└── front/          # 프론트엔드 (React + Vite + Tailwind CSS)
+plain/ (루트 - 깔끔하게 유지)
+├── .gitignore          # Git 무시 파일
+├── README.md           # 프로젝트 문서
+├── back/               # 백엔드 (Node.js + Express + MySQL)
+│   ├── server.js       # Express 서버 메인 파일
+│   ├── db.js           # MySQL 데이터베이스 연결 설정
+│   ├── package.json    # 백엔드 의존성
+│   ├── .env.example    # 환경변수 예제
+│   └── README.md       # 백엔드 문서
+└── front/              # 프론트엔드 (React + Vite + Tailwind CSS)
     ├── src/
     │   ├── main.jsx              # 앱 진입점
     │   ├── App.jsx               # 메인 라우터 & 상태 관리
@@ -34,7 +38,10 @@ plain/
     │           ├── DashboardPage.jsx     # 메인 대시보드
     │           ├── QuizPage.jsx          # 퀴즈 화면
     │           └── RankingPage.jsx       # 랭킹 화면
-    └── package.json
+    ├── package.json        # 프론트엔드 의존성
+    ├── vercel.json         # Vercel 배포 설정
+    ├── vite.config.js      # Vite 설정
+    └── .env.example        # 환경변수 예제
 ```
 
 ## 설치 및 실행
@@ -163,30 +170,34 @@ git push -u origin main
 
 ### Vercel로 프론트엔드 배포
 
-#### 🔧 배포 전 준비사항:
+#### 🔧 배포 방법 (Monorepo 구조):
 
-1. **환경 변수 설정** (Vercel 대시보드에서):
-   - `VITE_API_BASE_URL` = 백엔드 서버 URL (예: Railway/Render 배포 URL)
-
-2. **Vercel 배포 설정**:
-   - **Root Directory**: `front`
-   - **Framework Preset**: `Vite`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
+**Vercel 설정**:
+1. **Vercel 대시보드**에서 `Plain-edu/Plainedu` 리포지토리 선택
+2. **Root Directory**: `front` 설정 ⭐
+3. **Framework Preset**: `Vite` (자동 감지)
+4. **Build Command**: `npm run build` (자동 설정)
+5. **Output Directory**: `dist` (자동 설정)
 
 #### 📋 Vercel 배포 단계:
 
 1. **Vercel 계정 연결**: GitHub 계정으로 Vercel 로그인
-2. **프로젝트 import**: GitHub 리포지토리 선택
-3. **설정 구성**: 
+2. **프로젝트 import**: `Plain-edu/Plainedu` 리포지토리 선택
+3. **Configure Project**:
    ```
-   Root Directory: front
-   Framework: Vite
-   Build Command: npm run build
-   Output Directory: dist
+   Root Directory: front    ← 중요! 이것만 설정하면 됨
+   Framework: Vite (자동 감지)
    ```
-4. **환경 변수 추가**: `VITE_API_BASE_URL` 설정
-5. **배포 실행**: Deploy 버튼 클릭
+4. **환경 변수 추가**:
+   ```
+   VITE_API_BASE_URL = https://your-backend-url/api
+   ```
+5. **Deploy** 클릭!
+
+#### ✨ 장점:
+- ✅ **루트 폴더 깔끔** (별도 설정 파일 불필요)
+- ✅ **Monorepo 지원** (front 폴더만 빌드)
+- ✅ **Vite 자동 감지** (최적화된 빌드)
 
 ### 백엔드 배포 (추천 플랫폼)
 
