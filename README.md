@@ -155,8 +155,8 @@ git commit -m "Initial commit: Plain Edu Financial App"
 
 2. **GitHub 리포지토리 생성 후 연결**:
 ```bash
-# GitHub에서 새 리포지토리 생성 후
-git remote add origin https://github.com/your-username/your-repo-name.git
+# 이미 연결된 리포지토리
+git remote add origin https://github.com/Plain-edu/Plainedu.git
 git branch -M main
 git push -u origin main
 ```
