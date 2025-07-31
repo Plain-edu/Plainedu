@@ -11,7 +11,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["finance", "education", "api", "mysql"],
+  "keywords": [
+    "finance",
+    "education",
+    "api",
+    "mysql"
+  ],
   "author": "Plain Edu Team",
   "license": "MIT",
   "dependencies": {
