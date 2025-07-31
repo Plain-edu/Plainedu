@@ -201,33 +201,64 @@ git push -u origin main
 
 ### 백엔드 배포 (추천 플랫폼)
 
-#### 🌐 Railway 배포:
-```bash
-# Railway CLI 설치 후
-railway login
-railway init
-railway add # MySQL 데이터베이스 추가
-railway deploy
-```
+#### � **Render** (가장 추천 - 무료):
+1. [Render.com](https://render.com) 접속
+2. **New** → **Web Service** 
+3. **Connect Repository**: `Plain-edu/Plainedu` 선택
+4. **Settings**:
+   ```
+   Name: plainedu-backend
+   Root Directory: back
+   Environment: Node
+   Build Command: npm install
+   Start Command: npm start
+   ```
+5. **Environment Variables**:
+   ```
+   DB_HOST = (무료 MySQL DB 호스트)
+   DB_USER = (DB 사용자명)
+   DB_PASSWORD = (DB 비밀번호) 
+   DB_DATABASE = plainedu
+   PORT = 10000
+   ```
 
-#### 🌐 Render 배포:
-- **Web Service**: `back` 폴더 선택
-- **Build Command**: `npm install`
-- **Start Command**: `npm start`
-- **환경 변수**: DB 연결 정보 설정
+#### 🌐 **Vercel** (서버리스 함수로):
+- Vercel은 서버리스 함수도 지원하므로 백엔드도 배포 가능
+- `back` 폴더를 별도 Vercel 프로젝트로 배포
+
+#### 🆓 **무료 데이터베이스 옵션**:
+1. **PlanetScale** - MySQL 무료 티어 (가장 추천)
+2. **Supabase** - PostgreSQL 무료 티어  
+3. **MongoDB Atlas** - NoSQL 무료 티어
+4. **Render PostgreSQL** - Render에서 제공
+
+#### ❌ **Railway 제외 이유**:
+- 무료 티어 제한적
+- 더 좋은 무료 대안들 존재
 
 ### 🗄️ 데이터베이스 배포
 
-#### MySQL 클라우드 옵션:
-1. **PlanetScale** (무료 티어 제공)
-2. **Railway MySQL** (Railway와 함께 사용)
-3. **AWS RDS** (프로덕션 환경)
+#### 🌟 **PlanetScale** (가장 추천):
+1. [PlanetScale.com](https://planetscale.com) 가입
+2. **New Database** → 이름: `plainedu`
+3. **Connect** → **Connect with**: `mysql2`
+4. 연결 정보를 백엔드 환경변수에 설정
 
-### 🔄 전체 배포 플로우:
+#### 🆓 **기타 무료 옵션**:
+1. **Supabase** - PostgreSQL (코드 수정 필요)
+2. **MongoDB Atlas** - NoSQL (스키마 변경 필요)
+3. **Render PostgreSQL** - 백엔드와 함께 사용
+
+### 🔄 **간편한 배포 플로우** (Railway 없이):
 ```
-1. GitHub에 코드 업로드
-2. 백엔드 배포 (Railway/Render) → API URL 획득
-3. Vercel에서 프론트엔드 배포 + 환경변수에 API URL 설정
-4. MySQL 데이터베이스 배포 → 백엔드 환경변수 설정
-5. 테스트 및 도메인 연결
+1. GitHub에 코드 업로드 ✅
+2. PlanetScale에서 MySQL DB 생성 → 연결 정보 획득
+3. Render에서 백엔드 배포 + DB 환경변수 설정 → API URL 획득  
+4. Vercel에서 프론트엔드 배포 + API URL 환경변수 설정
+5. 완료! 🎉
 ```
+
+#### 💡 **추천 조합**:
+- **프론트엔드**: Vercel (무료, 빠름)
+- **백엔드**: Render (무료, 안정적)  
+- **데이터베이스**: PlanetScale (무료, MySQL)
