@@ -44,20 +44,19 @@ function parseDatabaseUrl(url) {
 // 연결 설정 결정
 let connectionConfig;
 
-if (process.env.MYSQL_URL) {
-    // Railway MYSQL_URL이 있는 경우 우선 사용
-    const urlConfig = parseDatabaseUrl(process.env.MYSQL_URL);
-    connectionConfig = urlConfig || {
-        host: process.env.MYSQLHOST,
-        port: process.env.MYSQLPORT || 3306,
-        user: process.env.MYSQLUSER,
-        password: process.env.MYSQLPASSWORD,
-        database: process.env.MYSQLDATABASE
-    };
-} else if (process.env.DATABASE_URL) {
-    // Railway DATABASE_URL이 있는 경우
+if (process.env.DATABASE_URL) {
+    // Railway DATABASE_URL이 있는 경우 최우선 사용
     const urlConfig = parseDatabaseUrl(process.env.DATABASE_URL);
     connectionConfig = urlConfig || {
+        host: process.env.MYSQL_HOST,
+        port: process.env.MYSQL_PORT || 3306,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE
+    };
+} else if (process.env.MYSQL_HOST) {
+    // 표준 MySQL 환경변수 사용
+    connectionConfig = {
         host: process.env.MYSQL_HOST,
         port: process.env.MYSQL_PORT || 3306,
         user: process.env.MYSQL_USER,
