@@ -44,8 +44,18 @@ function parseDatabaseUrl(url) {
 // 연결 설정 결정
 let connectionConfig;
 
-if (process.env.DATABASE_URL) {
-    // Railway 환경에서는 DATABASE_URL 사용
+if (process.env.MYSQL_URL) {
+    // Railway MYSQL_URL이 있는 경우 우선 사용
+    const urlConfig = parseDatabaseUrl(process.env.MYSQL_URL);
+    connectionConfig = urlConfig || {
+        host: process.env.MYSQLHOST,
+        port: process.env.MYSQLPORT || 3306,
+        user: process.env.MYSQLUSER,
+        password: process.env.MYSQLPASSWORD,
+        database: process.env.MYSQLDATABASE
+    };
+} else if (process.env.DATABASE_URL) {
+    // Railway DATABASE_URL이 있는 경우
     const urlConfig = parseDatabaseUrl(process.env.DATABASE_URL);
     connectionConfig = urlConfig || {
         host: process.env.MYSQL_HOST,
@@ -68,24 +78,49 @@ if (process.env.DATABASE_URL) {
 // 연결 풀 생성 (동시 연결 관리)
 const pool = mysql.createPool({
     ...connectionConfig,
+    ssl: false,                          // 로컬에서는 SSL 비활성화
+    authPlugins: {
+        mysql_native_password: () => () => Buffer.alloc(0)
+    },
     waitForConnections: true,            // 연결 대기 허용
     connectionLimit: 10,                 // 최대 동시 연결 수
     queueLimit: 0                        // 대기열 제한 없음
 });
 
-// 데이터베이스 연결 테스트
-pool.getConnection()
-    .then(connection => {
+// 데이터베이스 연결 테스트 및 DB 생성
+async function initializeDatabase() {
+    try {
+        // 먼저 mysql 시스템 DB에 연결해서 plainDB가 있는지 확인
+        const systemConfig = { ...connectionConfig };
+        delete systemConfig.database; // database 제거해서 시스템 DB 연결
+        
+        const systemPool = mysql.createPool(systemConfig);
+        const connection = await systemPool.getConnection();
+        
+        // plainDB 데이터베이스 생성 (존재하지 않는 경우)
+        await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${connectionConfig.database}\``);
+        console.log(`📊 데이터베이스 '${connectionConfig.database}' 확인/생성 완료`);
+        
+        connection.release();
+        await systemPool.end();
+        
+        // 이제 실제 데이터베이스에 연결 테스트
+        const testConnection = await pool.getConnection();
         console.log('✅ MySQL 데이터베이스에 성공적으로 연결되었습니다.');
         console.log(`📊 연결된 데이터베이스: ${connectionConfig.database}`);
         console.log(`🌐 호스트: ${connectionConfig.host}`);
-        connection.release(); // 연결 반환
-    })
-    .catch(err => {
+        testConnection.release();
+        
+    } catch (err) {
         console.error('❌ MySQL 데이터베이스 연결 실패:', err.message);
-        console.error('🔧 환경 변수 및 MySQL 서버 상태를 확인하세요.');
-        process.exit(1); // 연결 실패 시 서버 종료
-    });
+        console.error('🔧 MySQL 서버가 실행 중인지, 비밀번호가 정확한지 확인하세요.');
+        console.error('💡 MySQL root 비밀번호를 확인하고 .env 파일을 수정해주세요.');
+        process.exit(1);
+    }
+}
+
+// 데이터베이스 초기화 실행
+initializeDatabase();
 
 // 연결 풀 내보내기 (server.js에서 사용)
 module.exports = pool;
