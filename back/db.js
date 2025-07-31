@@ -28,11 +28,11 @@ require('dotenv').config(); // 환경 변수 로드
 
 // 연결 풀 생성 (동시 연결 관리)
 const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST || process.env.DB_HOST,           // Railway: MYSQL_HOST
-    port: process.env.MYSQL_PORT || 3306,                         // Railway: MYSQL_PORT  
-    user: process.env.MYSQL_USER || process.env.DB_USER,          // Railway: MYSQL_USER
-    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD, // Railway: MYSQL_PASSWORD
-    database: process.env.MYSQL_DATABASE || process.env.DB_DATABASE, // Railway: MYSQL_DATABASE
+    host: process.env.MYSQL_HOST || process.env.DB_HOST,           // Railway: MYSQL_HOST, 로컬: DB_HOST
+    port: process.env.MYSQL_PORT || 3306,                         // Railway: MYSQL_PORT
+    user: process.env.MYSQL_USER || process.env.DB_USER,          // Railway: MYSQL_USER, 로컬: DB_USER
+    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD, // Railway: MYSQL_PASSWORD, 로컬: DB_PASSWORD
+    database: process.env.MYSQL_DATABASE || process.env.DB_DATABASE, // Railway: MYSQL_DATABASE, 로컬: DB_DATABASE
     waitForConnections: true,            // 연결 대기 허용
     connectionLimit: 10,                 // 최대 동시 연결 수
     queueLimit: 0                        // 대기열 제한 없음
