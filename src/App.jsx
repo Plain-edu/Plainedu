@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
-
-// Ensure __app_id, __firebase_config, and __initial_auth_token are defined in the environment
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-// Initialize Firebase outside of the component to prevent re-initialization
-let app, db, auth;
-try {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-} catch (error) {
-  console.error("Firebase initialization error:", error);
-}
-
+import { Routes, Route, Navigate } from 'react-router-dom';
+import SignupPage from './pages/SignupPage';
 // Quiz data (hardcoded for demonstration)
 const quizzes = [
   {
@@ -86,9 +69,9 @@ const quizzes = [
 // Main App Component
 const App = () => {
   const [currentPage, setCurrentPage] = useState('splash');
-  const [userName, setUserName] = useState('');
-  const [userPhone, setUserPhone] = useState('');
-  const [userNickname, setUserNickname] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
   const [userGender, setUserGender] = useState('');
   const [userBirthdate, setUserBirthdate] = useState('');
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
@@ -111,87 +94,31 @@ const App = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
 
-  // Firebase Authentication and User Data Listener
+  // Replace Firebase auth with simple local userId generation
   useEffect(() => {
-    if (!auth || !db) {
-      console.error("Firebase is not initialized.");
-      return;
+    let storedId = localStorage.getItem('userId');
+    if (!storedId) {
+      storedId = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('userId', storedId);
     }
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUserId(user.uid);
-        // Attempt to sign in with custom token if available
-        if (initialAuthToken && user.isAnonymous) { // Only try if anonymous and token exists
-          try {
-            await signInWithCustomToken(auth, initialAuthToken);
-            console.log("Signed in with custom token.");
-          } catch (error) {
-            console.error("Error signing in with custom token:", error);
-            // Fallback to anonymous if custom token fails
-            await signInAnonymously(auth);
-            console.log("Signed in anonymously as fallback.");
-          }
-        }
-        setIsAuthReady(true);
-      } else {
-        // Sign in anonymously if no user or custom token
-        try {
-          await signInAnonymously(auth);
-          console.log("Signed in anonymously.");
-        } catch (error) {
-          console.error("Error signing in anonymously:", error);
-        }
-      }
-    });
-
-    return () => unsubscribe();
+    setUserId(storedId);
+    setIsAuthReady(true);
   }, []);
 
-  // Fetch user profile and rankings once auth is ready
+  // Fetch user profile and rankings from MySQL server
   useEffect(() => {
-    if (isAuthReady && userId && db) {
-      const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'userProfile');
-      const unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setUserProfile(docSnap.data());
-        } else {
-          // If profile doesn't exist, create a basic one
-          setDoc(userDocRef, {
-            name: '',
-            phone: '',
-            nickname: `User_${userId.substring(0, 6)}`,
-            gender: '',
-            birthdate: '',
-            totalAssets: 0,
-            quizProgress: 0,
-            quizAccuracy: 0,
-            acquiredTitles: [],
-            score: 0, // Add score for ranking
-          });
-        }
-      }, (error) => {
-        console.error("Error fetching user profile:", error);
-      });
+    if (isAuthReady && userId) {
+      fetch(`http://localhost:4000/api/profile/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.userId) setUserProfile(data);
+        });
 
-      const rankingsColRef = collection(db, `artifacts/${appId}/public/data/rankings`);
-      const q = query(rankingsColRef); // No orderBy to avoid index issues
-
-      const unsubscribeRankings = onSnapshot(q, (snapshot) => {
-        const fetchedRankings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Sort in memory to avoid Firestore orderBy issues
-        fetchedRankings.sort((a, b) => (b.score || 0) - (a.score || 0));
-        setRankings(fetchedRankings);
-      }, (error) => {
-        console.error("Error fetching rankings:", error);
-      });
-
-      return () => {
-        unsubscribeProfile();
-        unsubscribeRankings();
-      };
+      fetch('http://localhost:4000/api/rankings')
+        .then(res => res.json())
+        .then(data => setRankings(data));
     }
-  }, [isAuthReady, userId, db]);
+  }, [isAuthReady, userId]);
 
   const showCustomPopup = (message) => {
     setPopupMessage(message);
@@ -202,27 +129,54 @@ const App = () => {
     }, 3000); // Popup disappears after 3 seconds
   };
 
+  const handleSignup = async () => {
+    if (!email || !password || !nickname) {
+      showCustomPopup('모든 필드를 입력해주세요.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      showCustomPopup('유효한 이메일 주소를 입력해주세요.');
+      return;
+    }
+    if (password.length < 6) {
+      showCustomPopup('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+    if (nickname.length > 25) {
+      showCustomPopup('닉네임은 25자 이하여야 합니다.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:4000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nickname }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('userId', data.userId);
+        setUserId(data.userId);
+        showCustomPopup('회원가입이 완료되었습니다!');
+        setCurrentPage('terms');
+      } else {
+        showCustomPopup(data.message || '회원가입에 실패했습니다.');
+      }
+    } catch (error) {
+      showCustomPopup('서버 오류가 발생했습니다.');
+    }
+  };
+
   const handleNextPage = () => {
     switch (currentPage) {
       case 'splash':
         setCurrentPage('welcome');
         break;
       case 'welcome':
-        setCurrentPage('onboardingName');
+        setCurrentPage('signup');
         break;
-      case 'onboardingName':
-        if (userName.trim() === '') {
-          showCustomPopup('이름을 입력해주세요.');
-          return;
-        }
-        setCurrentPage('onboardingPhone');
-        break;
-      case 'onboardingPhone':
-        if (userPhone.trim() === '') {
-          showCustomPopup('휴대폰 번호를 입력해주세요.');
-          return;
-        }
-        setCurrentPage('terms');
+      case 'signup':
+        handleSignup();
         break;
       case 'terms':
         if (!termsAgreed || !privacyAgreed) {
@@ -241,7 +195,7 @@ const App = () => {
         }
         break;
       case 'profileSetup':
-        if (userNickname.trim() === '' || userGender.trim() === '' || userBirthdate.trim() === '') {
+        if (nickname.trim() === '' || userGender.trim() === '' || userBirthdate.trim() === '') {
           showCustomPopup('모든 프로필 정보를 입력해주세요.');
           return;
         }
@@ -276,19 +230,16 @@ const App = () => {
         }
         break;
       case 'quizComplete':
-        setCurrentPage('badgeReceive'); // After all quizzes, show "뱃지 받기" screen
+        setCurrentPage('badgeReceive');
         break;
-      case 'badgeReceive': // After clicking "뱃지 받기", show the badge and then transition to dashboard
-        setCurrentPage('dashboard'); // This will be the "퀴즈 종료" action
+      case 'badgeReceive':
+        setCurrentPage('dashboard');
         break;
       case 'dashboard':
-        // Handle navigation from dashboard, e.g., to quiz categories
         break;
       case 'profile':
-        // Handle profile updates
         break;
       case 'ranking':
-        // Handle ranking view
         break;
       default:
         setCurrentPage('splash');
@@ -297,11 +248,11 @@ const App = () => {
 
   const handlePrevPage = () => {
     switch (currentPage) {
-      case 'onboardingPhone':
-        setCurrentPage('onboardingName');
+      case 'signup':
+        setCurrentPage('welcome');
         break;
       case 'terms':
-        setCurrentPage('onboardingPhone');
+        setCurrentPage('signup');
         break;
       case 'otp':
         setCurrentPage('terms');
@@ -325,7 +276,7 @@ const App = () => {
         }
         break;
       case 'quizComplete':
-        setCurrentPage('quiz'); // Go back to the last quiz question
+        setCurrentPage('quiz');
         break;
       case 'badgeReceive':
         setCurrentPage('quizComplete');
@@ -341,7 +292,7 @@ const App = () => {
   };
 
   const startOtpTimer = () => {
-    setOtpTimer(180); // Reset to 3 minutes
+    setOtpTimer(180);
     setOtpRunning(true);
   };
 
@@ -358,39 +309,39 @@ const App = () => {
     return () => clearInterval(timer);
   }, [otpRunning, otpTimer]);
 
-
   const saveUserProfile = async () => {
-    if (!userId || !db) {
+    if (!userId) {
       showCustomPopup('사용자 인증 정보를 찾을 수 없습니다.');
       return;
     }
-    const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'userProfile');
-    const rankingDocRef = doc(db, `artifacts/${appId}/public/data/rankings`, userId);
-
     try {
-      await setDoc(userDocRef, {
-        name: userName,
-        phone: userPhone,
-        nickname: userNickname,
-        gender: userGender,
-        birthdate: userBirthdate,
-        totalAssets: userProfile?.totalAssets || 1000000, // Default starting asset
-        quizProgress: quizzes.length, // Assume all quizzes completed for initial badge
-        quizAccuracy: (quizScore / quizzes.length) * 100,
-        acquiredTitles: userProfile?.acquiredTitles || ['첫 도전'],
-        score: quizScore * 10000, // Example score calculation
-      }, { merge: true }); // Use merge to update existing fields without overwriting others
-
-      await setDoc(rankingDocRef, {
-        userId: userId,
-        nickname: userNickname,
-        score: quizScore * 10000,
-        title: '주린이', // Example title
-      }, { merge: true });
-
+      await fetch('http://localhost:4000/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          nickname,
+          gender: userGender,
+          birthdate: userBirthdate,
+          totalAssets: userProfile?.totalAssets || 1000000,
+          quizProgress: quizzes.length,
+          quizAccuracy: (quizScore / quizzes.length) * 100,
+          acquiredTitles: userProfile?.acquiredTitles || ['첫 도전'],
+          score: quizScore * 10000,
+        }),
+      });
+      await fetch('http://localhost:4000/api/ranking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          nickname,
+          score: quizScore * 10000,
+          title: '주린이',
+        }),
+      });
       showCustomPopup('프로필이 성공적으로 저장되었습니다!');
     } catch (e) {
-      console.error("Error saving profile or ranking: ", e);
       showCustomPopup('프로필 저장 중 오류가 발생했습니다.');
     }
   };
@@ -403,7 +354,6 @@ const App = () => {
             className="flex flex-col items-center justify-center min-h-screen bg-white cursor-pointer"
             onClick={handleNextPage}
           >
-            {/* Whale Logo - Placeholder SVG */}
             <svg width="200" height="100" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 50C10 22.3858 32.3858 0 60 0C87.6142 0 110 22.3858 110 50C110 77.6142 87.6142 100 60 100C32.3858 100 10 77.6142 10 50Z" fill="#66B2FF"/>
               <path d="M90 50C90 22.3858 112.386 0 140 0C167.614 0 190 22.3858 190 50C190 77.6142 167.614 100 140 100C112.386 100 90 77.6142 90 50Z" fill="#3385FF"/>
@@ -416,7 +366,6 @@ const App = () => {
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
             <div className="bg-gray-100 rounded-full p-8 mb-8 shadow-lg">
-              {/* Book Icon - Placeholder SVG */}
               <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M2 6C2 4.89543 2.89543 4 4 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H4C2.89543 20 2 19.1046 2 18V6Z" fill="#66B2FF"/>
                 <path d="M10 6C10 4.89543 10.8954 4 12 4H20C21.1046 4 22 4.89543 22 6V18C22 19.1046 21.1046 20 20 20H12C10.8954 20 10 19.1046 10 18V6Z" fill="#3385FF"/>
@@ -433,7 +382,7 @@ const App = () => {
             </button>
           </div>
         );
-      case 'onboardingName':
+      case 'signup':
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
             <div className="w-full flex justify-start mb-8">
@@ -441,45 +390,36 @@ const App = () => {
                 &lt;
               </button>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">이름을 작성해주세요</h1>
-            <p className="text-md text-gray-500 mb-8">가입하는 분의 정보로 작성해주세요.</p>
-            <input
-              type="text"
-              className="w-full max-w-md p-4 mb-8 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="윤창혁"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-            />
-            <button
-              className="w-full max-w-sm bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors"
-              onClick={handleNextPage}
-            >
-              다음
-            </button>
-          </div>
-        );
-      case 'onboardingPhone':
-        return (
-          <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
-            <div className="w-full flex justify-start mb-8">
-              <button onClick={handlePrevPage} className="text-gray-600 text-2xl font-bold">
-                &lt;
-              </button>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">회원가입</h1>
+            <p className="text-md text-gray-500 mb-8">가입 정보를 입력해주세요.</p>
+            <div className="w-full max-w-md">
+              <input
+                type="email"
+                className="w-full p-4 mb-4 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="이메일 (예: user@example.com)"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                className="w-full p-4 mb-4 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="비밀번호 (6자 이상)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <input
+                type="text"
+                className="w-full p-4 mb-8 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="닉네임 (최대 25자)"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">휴대폰 번호를 입력해주세요</h1>
-            <p className="text-md text-gray-500 mb-8">가입하는 분의 정보로 작성해주세요.</p>
-            <input
-              type="tel"
-              className="w-full max-w-md p-4 mb-8 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="010-1234-1234"
-              value={userPhone}
-              onChange={(e) => setUserPhone(e.target.value)}
-            />
             <button
               className="w-full max-w-sm bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors"
               onClick={handleNextPage}
             >
-              다음
+              회원가입
             </button>
           </div>
         );
@@ -566,7 +506,6 @@ const App = () => {
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
               />
-              {/* Simple OTP input simulation */}
               <div className="flex ml-4 space-x-2">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl font-bold text-gray-700">
@@ -574,7 +513,7 @@ const App = () => {
                   </div>
                 ))}
                 <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-xl font-bold text-white">
-                  {otpInput[3] || '7'} {/* Example last digit from design */}
+                  {otpInput[3] || '7'}
                 </div>
               </div>
             </div>
@@ -604,8 +543,8 @@ const App = () => {
                   type="text"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="닉네임"
-                  value={userNickname}
-                  onChange={(e) => setUserNickname(e.target.value)}
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
                 />
               </div>
               <div className="mb-4">
@@ -656,10 +595,10 @@ const App = () => {
       case 'quizIntro':
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">{userProfile?.nickname || userName}님의 금융지식을</h1>
-            <p className="text-xl text-gray-600 mb-8">체크해볼게요!</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-4 z-10">{userProfile?.nickname || nickname}님의 금융지식을</h1>
+            <p className="text-xl text-gray-600 mb-8 z-10">체크해볼게요!</p>
             <button
-              className="w-full max-w-sm bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors"
+              className="w-full max-w-sm bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors z-10"
               onClick={handleNextPage}
             >
               다음
@@ -676,7 +615,6 @@ const App = () => {
               </span>
             </div>
             <div className="w-full max-w-md bg-gray-100 rounded-lg p-6 mb-8 shadow-lg">
-              {/* Placeholder for image from page 13 */}
               <div className="w-full h-40 bg-gray-200 rounded-lg mb-6 flex items-center justify-center">
                 <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5Z" stroke="#3385FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -726,9 +664,7 @@ const App = () => {
       case 'quizComplete':
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
-            {/* Confetti Animation - Placeholder */}
             <div className="absolute inset-0 overflow-hidden">
-              {/* Simple circles/stars for confetti effect */}
               {Array.from({ length: 50 }).map((_, i) => (
                 <div
                   key={i}
@@ -769,7 +705,7 @@ const App = () => {
             <p className="text-xl text-gray-600 mb-8">금융공부를 시작했어요</p>
             <button
               className="w-full max-w-sm bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors"
-              onClick={handleNextPage} // This button now directly leads to the dashboard
+              onClick={handleNextPage}
             >
               퀴즈 종료
             </button>
@@ -782,9 +718,8 @@ const App = () => {
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <p className="text-3xl font-bold text-blue-600 mb-2">{userProfile?.totalAssets?.toLocaleString() || '1,000,000'}원</p>
               <p className="text-lg text-green-500 mb-4">일주일 전 대비 +12%</p>
-              {/* Placeholder for chart */}
               <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
-                              </div>
+              </div>
               <div className="flex justify-between text-sm text-gray-500 mt-2">
                 <span>7일 전</span>
                 <span>5일 전</span>
@@ -793,7 +728,6 @@ const App = () => {
                 <span>현재</span>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <button
                 className="bg-blue-600 text-white py-4 rounded-full text-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors"
@@ -811,7 +745,6 @@ const App = () => {
                 수익 실현하기
               </button>
             </div>
-
             <h2 className="text-xl font-bold text-gray-800 mb-4">원하는 분야 퀴즈 풀기</h2>
             <div className="grid grid-cols-2 gap-4 mb-6">
               {['반도체', '바이오', '조선', '2차 전지'].map((sector) => (
@@ -820,8 +753,6 @@ const App = () => {
                 </button>
               ))}
             </div>
-
-            {/* Market Summary Section - Simplified */}
             <h2 className="text-xl font-bold text-gray-800 mb-4">오늘 장 요약</h2>
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">미국 증시 마감 25.07.23</h3>
@@ -832,27 +763,21 @@ const App = () => {
               <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">하락 섹터</h3>
               <p className="text-red-600">양자컴퓨터 -1.55%, 반도체 -1.18%</p>
             </div>
-
-            {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 shadow-lg">
               <button onClick={() => setCurrentPage('dashboard')} className="flex flex-col items-center text-blue-600">
-                {/* Home Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 <span className="text-xs">홈</span>
               </button>
               <button onClick={() => setCurrentPage('ranking')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Ranking Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
                 <span className="text-xs">순위</span>
               </button>
               <button className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Premium Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-gem"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
                 <span className="text-xs">프리미엄</span>
               </button>
               <button onClick={() => setCurrentPage('profile')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Profile Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span className="text-xs">프로필</span>
               </button>
             </div>
@@ -867,20 +792,17 @@ const App = () => {
               </button>
             </div>
             <div className="flex flex-col items-center bg-white rounded-lg shadow-md p-6 mb-6">
-              {/* Profile Image Placeholder */}
               <div className="w-24 h-24 rounded-full bg-gray-300 mb-4 flex items-center justify-center text-gray-600 text-sm overflow-hidden">
-                {/* Placeholder image for profile picture */}
                 <img src="https://placehold.co/96x96/cccccc/333333?text=Profile" alt="Profile" className="w-full h-full object-cover"/>
               </div>
               <h1 className="text-2xl font-bold text-gray-800">{userProfile?.nickname || '닉네임 없음'}</h1>
               <p className="text-md text-gray-600 mb-2">다들 성투하세요~</p>
-              <p className="text-lg font-semibold text-blue-600 mb-4">주린이 현재 {(userProfile?.totalAssets - 1000000).toLocaleString() || '0'}원 수익</p>
+              <p className="text-lg font-semibold text-blue-600 mb-4">주린이 현재 {(userProfile?.totalAssets - 1000000)?.toLocaleString() || '0'}원 수익</p>
               <button className="bg-gray-200 text-gray-700 py-2 px-4 rounded-full text-sm font-semibold hover:bg-gray-300 transition-colors">
                 프로필 수정
               </button>
-              <p className="text-sm text-gray-500 mt-2">User ID: {userId}</p> {/* Display userId */}
+              <p className="text-sm text-gray-500 mt-2">User ID: {userId}</p>
             </div>
-
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">퀴즈 진행도</h2>
               <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
@@ -890,7 +812,6 @@ const App = () => {
                 ></div>
               </div>
               <p className="text-md text-gray-600 mb-4">목표까지 {100 - (userProfile?.quizProgress || 0)}% 남았어요!</p>
-
               <h2 className="text-xl font-bold text-gray-800 mb-4">획득 타이틀</h2>
               <div className="flex flex-wrap gap-2">
                 {userProfile?.acquiredTitles?.map((title, index) => (
@@ -900,35 +821,27 @@ const App = () => {
                 ))}
               </div>
             </div>
-
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">총 자산</h2>
               <p className="text-2xl font-bold text-blue-600 mb-4">{userProfile?.totalAssets?.toLocaleString() || '1,000,000'}원</p>
-
               <h2 className="text-xl font-bold text-gray-800 mb-4">퀴즈 정답률</h2>
               <p className="text-2xl font-bold text-green-600 mb-4">{userProfile?.quizAccuracy?.toFixed(0) || '0'}%</p>
             </div>
-
-            {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 shadow-lg">
               <button onClick={() => setCurrentPage('dashboard')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Home Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 <span className="text-xs">홈</span>
               </button>
               <button onClick={() => setCurrentPage('ranking')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Ranking Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
                 <span className="text-xs">순위</span>
               </button>
               <button className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Premium Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-gem"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
                 <span className="text-xs">프리미엄</span>
               </button>
-              <button onClick={() => setCurrentPage('profile')} className="flex flex-col items-center text-blue-600">
-                {/* Profile Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <button onClick={() => setCurrentPage('profile')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span className="text-xs">프로필</span>
               </button>
             </div>
@@ -947,7 +860,6 @@ const App = () => {
               <button className="py-2 px-4 text-gray-600 font-semibold">친구 랭킹</button>
               <button className="py-2 px-4 text-gray-600 font-semibold">친구목록</button>
             </div>
-
             <div className="bg-white rounded-b-lg shadow-md p-6">
               <div className="grid grid-cols-3 font-bold text-gray-700 border-b pb-2 mb-4">
                 <span>순위</span>
@@ -958,7 +870,6 @@ const App = () => {
                 <div key={rank.id} className={`grid grid-cols-3 items-center py-3 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} rounded-lg mb-2`}>
                   <span className="text-center font-semibold">{index + 1}위</span>
                   <div className="flex items-center">
-                    {/* Profile image placeholder */}
                     <div className="w-10 h-10 rounded-full bg-gray-300 mr-3 overflow-hidden">
                       <img src={`https://placehold.co/40x40/cccccc/333333?text=User`} alt="User" className="w-full h-full object-cover"/>
                     </div>
@@ -971,27 +882,21 @@ const App = () => {
                 </div>
               ))}
             </div>
-
-            {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 shadow-lg">
               <button onClick={() => setCurrentPage('dashboard')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Home Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 22 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 <span className="text-xs">홈</span>
               </button>
               <button onClick={() => setCurrentPage('ranking')} className="flex flex-col items-center text-blue-600">
-                {/* Ranking Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M14 15v-4"/><path d="M10 15v-4"/><path d="M8 22v-4h8v4"/><path d="M12 17v5"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
                 <span className="text-xs">순위</span>
               </button>
               <button className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Premium Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-gem"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6l14 16 3-4L6 2z"/><path d="M11 2L2 6l14 16 9-4L11 2z"/></svg>
                 <span className="text-xs">프리미엄</span>
               </button>
               <button onClick={() => setCurrentPage('profile')} className="flex flex-col items-center text-gray-500 hover:text-blue-600">
-                {/* Profile Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span className="text-xs">프로필</span>
               </button>
             </div>
@@ -1013,27 +918,15 @@ const App = () => {
   };
 
   return (
-    <div className="App font-inter">
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      <script src="https://cdn.tailwindcss.com"></script>
-      {renderPage()}
+    
+      <Routes>
+      {/* /signup 로 들어오면 SignupPage 렌더 */}
+      <Route path="/signup" element={<SignupPage />} />
 
-      {/* Custom Popup Message */}
-      {showPopup && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full shadow-lg z-50 animate-fade-in-out">
-          {popupMessage}
-        </div>
-      )}
-      <style>{`
-        @keyframes fadeInOut {
-          0%, 100% { opacity: 0; }
-          10%, 90% { opacity: 1; }
-        }
-        .animate-fade-in-out {
-          animation: fadeInOut 3s ease-in-out forwards;
-        }
-      `}</style>
-    </div>
+      {/* 루트(/)나 그 외 모든 경로는 /signup 으로 리다이렉트 */}
+      <Route path="/" element={<Navigate to="/signup" replace />} />
+      <Route path="*" element={<Navigate to="/signup" replace />} />
+    </Routes>
   );
 };
 
