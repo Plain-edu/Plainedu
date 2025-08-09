@@ -1,0 +1,19 @@
+{
+  "name": "plainedu-backend",
+  "version": "1.0.0",
+  "description": "Backend for PlainEdu application",
+  "main": "server/index.cjs",
+  "scripts": {
+    "start": "node server/index.cjs",
+    "dev": "node server/index.cjs"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1"
+  },
+  "keywords": ["backend", "express", "mysql"],
+  "author": "",
+  "license": "ISC"
+}

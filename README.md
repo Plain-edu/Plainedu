@@ -1,4 +1,52 @@
-# React + Vite
+# PlainEdu
+
+금융 교육 플랫폼 애플리케이션입니다.
+
+## 프로젝트 구조
+
+```
+PlainEdu-BE/
+├── front/          # 프론트엔드 (React + Vite)
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── ...
+├── back/           # 백엔드 (Node.js + Express)
+│   ├── server/
+│   ├── package.json
+│   └── ...
+└── README.md
+```
+
+## 실행 방법
+
+### 백엔드 실행
+```bash
+cd back
+npm install
+npm start
+```
+
+### 프론트엔드 실행
+```bash
+cd front  
+npm install
+npm run dev
+```
+
+## 기술 스택
+
+### Frontend
+- React
+- Vite
+- Tailwind CSS
+- React Router DOM
+
+### Backend
+- Node.js
+- Express.js
+- MySQL2
+- CORS+ Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
