@@ -1,9 +1,19 @@
 import React from 'react';
+// useNavigate를 import 합니다.
+import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../context/AppStateContext';
 import { quizzes } from '../data/quizzes';
 
 export default function DashboardPage() {
   const { user, quizState } = useAppState();
+  // navigate 함수를 사용할 수 있도록 설정합니다.
+  const navigate = useNavigate();
+
+  // 버튼 클릭 시 '/theme' 경로로 이동하는 함수
+  const handleStartQuiz = () => {
+    navigate('/theme');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm p-4">
@@ -20,11 +30,20 @@ export default function DashboardPage() {
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-green-600">
-                {Math.round((quizState.score / quizzes.length) * 100)}%
+                {quizzes.length > 0 ? Math.round((quizState.score / quizzes.length) * 100) : 0}%
               </p>
               <p className="text-sm text-gray-600">정답률</p>
             </div>
           </div>
+        </div>
+        <div className="text-center">
+          {/* 버튼에 onClick 이벤트 핸들러를 추가합니다. */}
+          <button
+            onClick={handleStartQuiz}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            새로운 퀴즈 시작하기
+          </button>
         </div>
       </div>
     </div>

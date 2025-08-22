@@ -1,4 +1,4 @@
-// server/index.cjs (또는 index.js)
+// server/index.cjs
 const express = require('express');
 const mysql   = require('mysql2/promise');
 const bcrypt  = require('bcrypt');
@@ -20,15 +20,14 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'wkddnjs788',
+  password: 'plain',
   database: 'plaindb',
   waitForConnections: true,
   connectionLimit: 10,
 });
 
-/* ------------------ Helper 함수들 ------------------- */
+/* ------------------ Helper ------------------- */
 const mapGender = (g) => {
-  // 프론트에서 'male'/'female'로 올 수도 있고 'M'/'F'로 올 수도 있으니 통일
   if (!g) return null;
   const s = String(g).toLowerCase();
   if (s.startsWith('m')) return 'M';
@@ -36,7 +35,7 @@ const mapGender = (g) => {
   return null;
 };
 
-/* -------------------- Health Check ------------------ */
+/* -------------------- Health ------------------ */
 app.get('/api/health', (_req, res) => res.json({ status: 'OK' }));
 app.get('/api/db-test', async (_req, res) => {
   try {
@@ -51,16 +50,11 @@ app.get('/api/db-test', async (_req, res) => {
 });
 
 /* ---------------------- 회원가입 --------------------- */
-
 app.post('/api/signup', async (req, res) => {
-  console.log('Signup request received:', req.body);
-
   const { name, email, password, nickname, gender } = req.body || {};
   if (!name || !email || !password || !nickname || !gender) {
     return res.status(400).json({ message: '모든 필드를 입력해주세요.' });
   }
-
-  // 'male'/'female' 혹은 'M'/'F' → DB ENUM('M','F')로 맞춤
   const genderValue = mapGender(gender);
   if (!genderValue) {
     return res.status(400).json({ message: '성별 값이 올바르지 않습니다.' });
@@ -69,14 +63,10 @@ app.post('/api/signup', async (req, res) => {
   try {
     const conn = await pool.getConnection();
     try {
-      // 이메일 중복
       const [exists] = await conn.execute('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
       if (exists.length) return res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
 
-      // 비밀번호 해시
       const hash = await bcrypt.hash(password, 10);
-
-      // users 생성 (tier=0, subscription=0)
       const [result] = await conn.execute(
         `INSERT INTO users (name, email, password, nickname, gender, tier, subscription)
          VALUES (?, ?, ?, ?, ?, 0, 0)`,
@@ -84,17 +74,14 @@ app.post('/api/signup', async (req, res) => {
       );
       const userId = result.insertId;
 
-      // user_points 초기 레코드 (컬럼 기본값 가정)
       await conn.execute(`INSERT INTO user_points (user_id) VALUES (?)`, [userId]);
 
-      console.log('Signup successful for user:', userId);
       res.status(201).json({ userId });
     } finally {
       conn.release();
     }
   } catch (err) {
     console.error('Signup error:', err);
-    // 유니크 제약 방어
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
     }
@@ -103,9 +90,6 @@ app.post('/api/signup', async (req, res) => {
 });
 
 /* ----------------------- 로그인 ---------------------- */
-/* POST /api/signin
-   body: { email, password }
-   성공 시: { userId, email, name, nickname, gender, tier, subscription } */
 app.post('/api/signin', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
@@ -121,18 +105,13 @@ app.post('/api/signin', async (req, res) => {
         [email]
       );
 
-      if (!rows.length) {
-        return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
-      }
+      if (!rows.length) return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
       const user = rows[0];
       const ok = await bcrypt.compare(password, user.password);
-      if (!ok) {
-        return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
-      }
+      if (!ok) return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
-      // 비밀번호 제외하고 반환
-      return res.json({
+      res.json({
         userId: user.id,
         email: user.email,
         name: user.name,
@@ -154,7 +133,6 @@ app.post('/api/signin', async (req, res) => {
 app.get('/api/profile/:userId', async (req, res) => {
   const { userId } = req.params;
 
-  // 데모용 임시 ID 대응
   if (String(userId).startsWith('user_')) {
     return res.json({
       userId,
@@ -236,6 +214,158 @@ app.post('/api/ranking', async (req, res) => {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
+
+/* ---------------------- 퀴즈 API ---------------------- */
+// 예: /api/quizzes?theme=A  또는  /api/quizzes/A
+app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
+  const theme = (req.params.theme || req.query.theme || 'A').toUpperCase();
+  let conn;
+  try {
+    conn = await pool.getConnection();
+
+    /* 1) OX */
+    const [tfRows] = await conn.query(
+      `
+      SELECT
+        question_id AS id,
+        theme,
+        difficulty,
+        question_text AS question,
+        JSON_UNQUOTE(JSON_EXTRACT(correct_answer, '$.answer'))      AS answer,
+        JSON_UNQUOTE(JSON_EXTRACT(correct_answer, '$.explanation')) AS explanation,
+        points
+      FROM quiz_true_false
+      WHERE theme = ?
+      ORDER BY question_id ASC
+      `,
+      [theme]
+    );
+
+    /* 2) 3지선다 */
+    const [mcRowsRaw] = await conn.query(
+      `
+      SELECT
+        question_id AS id,
+        theme,
+        difficulty,
+        question_text AS question,
+        image_url,
+        choice_1, choice_2, choice_3,
+        JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.answer')) AS ans_raw,
+        COALESCE(
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.explanation')),
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.explaintion')),
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.explaination')),
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.explainiton')),
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.설명')),
+          JSON_UNQUOTE(JSON_EXTRACT(correct_choice, '$.해설'))
+        ) AS explanation,
+        points
+      FROM quiz_multiple_choice
+      WHERE theme = ?
+      ORDER BY question_id ASC
+      `,
+      [theme]
+    );
+
+    const mcRows = mcRowsRaw.map(r => {
+      const choices = [r.choice_1, r.choice_2, r.choice_3];
+      let answerIndex = null; let answerLetter = null;
+
+      if (r.ans_raw != null) {
+        const raw = String(r.ans_raw).trim(); const upper = raw.toUpperCase();
+        if (['A','B','C'].includes(upper)) {
+          answerLetter = upper; answerIndex = {A:0,B:1,C:2}[upper];
+        } else if (/^[0-3]$/.test(upper)) {
+          const n = Number(upper); answerIndex = (n <= 2) ? n : n - 1; answerLetter = ['A','B','C'][answerIndex];
+        } else {
+          const idx = choices.findIndex(c => String(c).trim() === raw);
+          if (idx >= 0) { answerIndex = idx; answerLetter = ['A','B','C'][idx]; }
+        }
+      }
+
+      return {
+        type: 'multiple_choice',
+        id: r.id, theme: r.theme, difficulty: r.difficulty,
+        question: r.question, image_url: r.image_url,
+        choices, answerIndex, answer: answerLetter,
+        explanation: r.explanation, points: r.points
+      };
+    }).filter(q => q.answerIndex != null);
+
+    /* 3) 선연결(matching) */
+    const [matchRaw] = await conn.query(
+      `
+      SELECT
+        quiz_id AS id,
+        theme,
+        difficulty,
+        points,
+        JSON_UNQUOTE(JSON_EXTRACT(items,'$')) AS items_json   -- 문자열로 뽑기(안전)
+      FROM matching_quiz
+      WHERE theme = ?
+      ORDER BY quiz_id ASC
+      `,
+      [theme]
+    );
+
+    console.log('[matching] rows:', matchRaw.length); // 🔎 몇 개 나왔는지
+
+    const matchRows = matchRaw.map(r => {
+      let pairs = [];
+      try {
+        const parsed = typeof r.items_json === 'string' ? JSON.parse(r.items_json) : r.items_json;
+        if (Array.isArray(parsed)) {
+          pairs = parsed.map((x, i) => {
+            const q = x?.question ?? x?.q ?? x?.left ?? null;
+            const a = x?.answer   ?? x?.a ?? x?.right ?? null;
+            if (a == null) return null;
+            return {
+              question: (q == null || String(q).trim() === '') ? `항목 ${i + 1}` : String(q),
+              answer: String(a),
+            };
+          }).filter(Boolean);
+        } else {
+          console.warn('[matching] items JSON is not array. id=', r.id, ' value=', r.items_json);
+        }
+      } catch (e) {
+        console.error('[matching] JSON parse error. id=', r.id, 'msg=', e.message, 'value=', r.items_json);
+      }
+
+      return {
+        type: 'matching',
+        id: r.id,
+        theme: r.theme,
+        difficulty: r.difficulty ?? 0,
+        points: r.points ?? 0,
+        question: '다음 항목을 올바르게 연결하세요.',
+        pairs
+      };
+    }).filter(m => m.pairs.length >= 2);
+
+    console.log('[matching] usable items:', matchRows.length); // 🔎 최종 살아남은 개수
+
+    /* 응답 통합 */
+    const items = [
+      ...tfRows.map(q => ({
+        type: 'true_false',
+        id: q.id, theme: q.theme, difficulty: q.difficulty,
+        question: q.question, answer: q.answer,
+        explanation: q.explanation, points: q.points
+      })),
+      ...mcRows,
+      ...matchRows
+    ];
+
+    res.json({ theme, count: items.length, items });
+  } catch (err) {
+    console.error('Quizzes API error:', err);
+    res.status(500).json({ message: '퀴즈를 불러오지 못했습니다.', error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 
 /* ----------------------- Start ---------------------- */
 const PORT = 4000;
