@@ -28,8 +28,18 @@ export default function QuizThemePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm p-4">
-        <h1 className="text-2xl font-bold text-gray-800">퀴즈 주제 선택</h1>
-        <p className="text-gray-600">학습하고 싶은 주제를 선택하세요.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">퀴즈 주제 선택</h1>
+            <p className="text-gray-600">학습하고 싶은 주제를 선택하세요.</p>
+          </div>
+          <button
+            onClick={() => nav('/dashboard')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            대시보드
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 p-4">
