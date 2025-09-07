@@ -1,11 +1,13 @@
 // src/pages/Quiz.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppState } from '../context/AppStateContext';
 
 export default function Quiz() {
   const { theme: rawTheme } = useParams();
   const theme = (rawTheme || 'A').toUpperCase();
   const nav = useNavigate();
+  const { saveQuizResult, auth } = useAppState();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export default function Quiz() {
     } else {
       setMRight([]);
     }
-  }, [idx, current?.type]);
+  }, [idx, current?.type, current?.pairs]);
 
   // 3지선다용 정답 인덱스 계산
   const getAnswerIndex = (q) => {
@@ -214,11 +216,31 @@ export default function Quiz() {
     if (isCorrect) setScore(s => s + 1);
   };
 
-  const onNext = () => {
+  const onNext = async () => {
     if (idx + 1 < items.length) {
       setIdx(i => i + 1);
     } else {
-      alert(`퀴즈 종료! 점수: ${score}/${items.length}`);
+      // 퀴즈 완료 - 결과를 백엔드에 저장
+      console.log('퀴즈 완료:', { theme, score, totalQuestions: items.length, auth });
+      
+      if (!auth?.userId) {
+        console.error('로그인되지 않음 - 결과 저장 불가');
+        alert(`퀴즈 종료! 점수: ${score}/${items.length}\n(로그인이 필요합니다)`);
+        nav('/theme');
+        return;
+      }
+      
+      try {
+        console.log('퀴즈 결과 저장 시작...');
+        console.log('전송할 데이터:', { theme, score, totalQuestions: items.length, userId: auth.userId });
+        await saveQuizResult(theme, score, items.length);
+        console.log('퀴즈 결과 저장 완료');
+        alert(`퀴즈 종료! 점수: ${score}/${items.length}\n결과가 저장되었습니다!`);
+      } catch (error) {
+        console.error('결과 저장 실패:', error);
+        console.error('에러 메시지:', error.message);
+        alert(`퀴즈 종료! 점수: ${score}/${items.length}\n결과 저장에 실패했습니다: ${error.message}`);
+      }
       nav('/theme');
     }
   };

@@ -5,7 +5,7 @@ import { useAppState } from '../context/AppStateContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAppState();
+  const { login, loadUserStats } = useAppState();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
@@ -34,6 +34,10 @@ export default function LoginPage() {
         tier: data.tier,
         subscription: data.subscription,
       });
+      
+      // 로그인 성공 후 사용자 통계 로드
+      await loadUserStats();
+      
       navigate('/dashboard');
     } catch {
       setErr('서버 오류가 발생했습니다.');

@@ -1,7 +1,27 @@
 # 📘 plainDB 매뉴얼 (복원 & 백업)
 
-이 문서는 `plainDB_restorable.sql` 파일을 사용하여 VSCode에서 클릭만으로 DB를 **복원(Import)** 하는 방법과,  
+이 문서는 `plaindb.sql` 파일을 사용하여 VSCode에서 클릭만으로 DB를 **복원(Import)** 하는 방법과,  
 나의 DB를 `.sql` 파일로 **백업(Export)** 하는 방법을 설명합니다.
+
+## 🆕 DB 구조 변경 안내 (2025-09-07 업데이트)
+
+**새로운 통합형 구조로 마이그레이션 완료!**
+
+### 🔵 새 구조 (통합형)
+```
+questions (문제 마스터)
+├── question_multiple_choice (객관식 상세)
+├── question_true_false (OX 상세)  
+├── question_matching (매칭 상세)
+└── quiz_results (사용자별 풀이 결과)
+```
+
+### 🔴 이전 구조 (분산형) - 백업됨
+```
+matching_quiz_backup
+quiz_multiple_choice_backup
+quiz_true_false_backup
+```
 
 ---
 
@@ -30,7 +50,7 @@
 
 ## ✅ 3. SQL 파일 복원 (Import)
 
-제공된 **`plainDB_restorable.sql`** 파일을 VSCode에서 엽니다.  
+제공된 **`plaindb.sql`** 파일을 VSCode에서 엽니다.  
 파일 상단에는 이미 DB 생성과 복원 편의를 위한 구문이 포함되어 있어, 그대로 실행하면 됩니다:
 
 ```sql
@@ -42,12 +62,12 @@ START TRANSACTION;
 ```
 
 ### 🔹 SQLTools로 실행
-1. `plainDB_restorable.sql` 파일 열기
+1. `plaindb.sql` 파일 열기
 2. `Ctrl + A` 전체 선택
 3. `Ctrl + Enter` → **Execute Query**
 
 ### 🔹 MySQL 확장(코끼리 아이콘)으로 실행
-1. `plainDB_restorable.sql` 파일 열기
+1. `plaindb.sql` 파일 열기
 2. 상단 **Run 버튼 클릭**  
    또는 **우클릭 → Run Query**
 
@@ -57,11 +77,13 @@ START TRANSACTION;
 
 - VSCode DB 탐색기에서 **plainDB** 확인
 - 주요 테이블 생성 여부 확인:
-  - `users`
-  - `user_points`
-  - `matching_quiz`
-  - `quiz_multiple_choice`
-  - `quiz_true_false`
+  - `questions` (문제 마스터)
+  - `question_multiple_choice` (객관식 상세)
+  - `question_true_false` (OX 상세)
+  - `question_matching` (매칭 상세)
+  - `quiz_results` (풀이 결과)
+  - `users` (사용자)
+  - `user_points` (포인트)
 - 데이터까지 들어가 있으면 복원 성공 ✅
 
 ---
