@@ -3,11 +3,17 @@ const express = require('express');
 const mysql   = require('mysql2/promise');
 const bcrypt  = require('bcrypt');
 
+// Swagger 설정 가져오기
+const { swaggerSpecs, swaggerUi, swaggerUiOptions } = require('../swagger/swagger.cjs');
+
 const app = express();
+
+/* ----------------------- Swagger Setup ----------------------- */
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, swaggerUiOptions));
 
 /* ----------------------- CORS ----------------------- */
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Origin', '*'); // 모든 도메인에서 접속 허용 (개발용)
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -50,6 +56,83 @@ app.get('/api/db-test', async (_req, res) => {
 });
 
 /* ---------------------- 회원가입 --------------------- */
+/**
+ * @swagger
+ * /api/signup:
+ *   post:
+ *     summary: 회원가입
+ *     tags: [Authentication]
+ *     description: 새로운 사용자를 등록합니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - nickname
+ *               - gender
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: 사용자 이름
+ *                 example: "홍길동"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일 주소
+ *                 example: "hong@example.com"
+ *               password:
+ *                 type: string
+ *                 description: 비밀번호
+ *                 example: "password123"
+ *               nickname:
+ *                 type: string
+ *                 description: 닉네임
+ *                 example: "길동이"
+ *               gender:
+ *                 type: string
+ *                 enum: [M, F]
+ *                 description: 성별
+ *                 example: "M"
+ *     responses:
+ *       201:
+ *         description: 회원가입 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userId:
+ *                   type: integer
+ *                   description: 생성된 사용자 ID
+ *                   example: 1
+ *       400:
+ *         description: 잘못된 요청 (필수 필드 누락 또는 성별 값 오류)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "모든 필드를 입력해주세요."
+ *       409:
+ *         description: 이미 존재하는 이메일
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "이미 사용 중인 이메일입니다."
+ *       500:
+ *         description: 서버 오류
+ */
 app.post('/api/signup', async (req, res) => {
   const { name, email, password, nickname, gender } = req.body || {};
   if (!name || !email || !password || !nickname || !gender) {
@@ -90,6 +173,62 @@ app.post('/api/signup', async (req, res) => {
 });
 
 /* ----------------------- 로그인 ---------------------- */
+/**
+ * @swagger
+ * /api/signin:
+ *   post:
+ *     summary: 로그인
+ *     tags: [Authentication]
+ *     description: 사용자 로그인을 처리합니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일 주소
+ *                 example: "hong@example.com"
+ *               password:
+ *                 type: string
+ *                 description: 비밀번호
+ *                 example: "password123"
+ *     responses:
+ *       200:
+ *         description: 로그인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: 잘못된 요청 (이메일 또는 비밀번호 누락)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "이메일과 비밀번호를 입력해주세요."
+ *       401:
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "이메일 또는 비밀번호가 올바르지 않습니다."
+ *       500:
+ *         description: 서버 오류
+ */
 app.post('/api/signin', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
@@ -216,6 +355,78 @@ app.post('/api/ranking', async (req, res) => {
 });
 
 /* ---------------------- 퀴즈 API ---------------------- */
+/**
+ * @swagger
+ * /api/quizzes:
+ *   get:
+ *     summary: 퀴즈 목록 조회
+ *     tags: [Quiz]
+ *     description: 특정 테마의 퀴즈 문제들을 조회합니다.
+ *     parameters:
+ *       - in: query
+ *         name: theme
+ *         schema:
+ *           type: string
+ *           default: "A"
+ *         description: 퀴즈 테마 (A, B, C 등)
+ *         example: "A"
+ *     responses:
+ *       200:
+ *         description: 퀴즈 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 theme:
+ *                   type: string
+ *                   description: 테마
+ *                   example: "A"
+ *                 count:
+ *                   type: integer
+ *                   description: 문제 개수
+ *                   example: 10
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Question'
+ *       500:
+ *         description: 서버 오류
+ * 
+ * /api/quizzes/{theme}:
+ *   get:
+ *     summary: 특정 테마 퀴즈 조회
+ *     tags: [Quiz]
+ *     description: 특정 테마의 퀴즈 문제들을 조회합니다.
+ *     parameters:
+ *       - in: path
+ *         name: theme
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 퀴즈 테마
+ *         example: "A"
+ *     responses:
+ *       200:
+ *         description: 퀴즈 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 theme:
+ *                   type: string
+ *                   example: "A"
+ *                 count:
+ *                   type: integer
+ *                   example: 10
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Question'
+ *       500:
+ *         description: 서버 오류
+ */
 // 예: /api/quizzes?theme=A  또는  /api/quizzes/A
 app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
   const theme = (req.params.theme || req.query.theme || 'A').toUpperCase();
@@ -370,6 +581,57 @@ app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
 });
 
 /* ---------------------- 퀴즈 결과 저장 (개별 문제) ---------------------- */
+/**
+ * @swagger
+ * /api/quiz-result-single:
+ *   post:
+ *     summary: 개별 문제 결과 저장
+ *     tags: [Quiz]
+ *     description: 사용자가 푼 개별 문제의 결과를 저장합니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - questionId
+ *               - solved
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: 사용자 ID
+ *                 example: 1
+ *               questionId:
+ *                 type: integer
+ *                 description: 문제 ID
+ *                 example: 101
+ *               solved:
+ *                 type: boolean
+ *                 description: 정답 여부
+ *                 example: true
+ *               attemptCount:
+ *                 type: integer
+ *                 description: 시도 횟수
+ *                 default: 1
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 결과 저장 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "퀴즈 결과가 저장되었습니다."
+ *       400:
+ *         description: 필수 필드 누락
+ *       500:
+ *         description: 서버 오류
+ */
 app.post('/api/quiz-result-single', async (req, res) => {
   const { userId, questionId, solved, attemptCount = 1 } = req.body || {};
   
@@ -420,6 +682,63 @@ app.post('/api/quiz-result-single', async (req, res) => {
 });
 
 /* ---------------------- 퀴즈 결과 저장 (테마별 전체) ---------------------- */
+/**
+ * @swagger
+ * /api/quiz-result:
+ *   post:
+ *     summary: 테마별 전체 퀴즈 결과 저장
+ *     tags: [Quiz]
+ *     description: 사용자가 완료한 테마별 전체 퀴즈 결과를 저장합니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/QuizResult'
+ *     responses:
+ *       200:
+ *         description: 퀴즈 결과 저장 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "퀴즈 결과가 저장되었습니다."
+ *                 theme:
+ *                   type: string
+ *                   example: "A"
+ *                 score:
+ *                   type: integer
+ *                   example: 8
+ *                 totalQuestions:
+ *                   type: integer
+ *                   example: 10
+ *                 accuracy:
+ *                   type: integer
+ *                   description: 정답률 (%)
+ *                   example: 80
+ *       400:
+ *         description: 필수 필드 누락
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "필수 필드가 누락되었습니다."
+ *                 required:
+ *                   type: string
+ *                   example: "userId, theme, score, totalQuestions"
+ *                 received:
+ *                   type: object
+ *       404:
+ *         description: 해당 테마의 문제를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
 app.post('/api/quiz-result', async (req, res) => {
   console.log('퀴즈 결과 저장 요청 받음:', req.body);
   const { userId, theme, score, totalQuestions } = req.body || {};
@@ -499,6 +818,69 @@ app.post('/api/quiz-result', async (req, res) => {
 });
 
 /* ---------------------- 사용자 퀴즈 통계 ---------------------- */
+/**
+ * @swagger
+ * /api/quiz-stats/{userId}:
+ *   get:
+ *     summary: 사용자 퀴즈 통계 조회
+ *     tags: [Quiz]
+ *     description: 특정 사용자의 퀴즈 진행 통계를 조회합니다.
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 사용자 ID
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 통계 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 overall:
+ *                   type: object
+ *                   properties:
+ *                     total_questions:
+ *                       type: integer
+ *                       description: 전체 문제 수
+ *                       example: 100
+ *                     attempted_questions:
+ *                       type: integer
+ *                       description: 시도한 문제 수
+ *                       example: 25
+ *                     solved_questions:
+ *                       type: integer
+ *                       description: 정답 문제 수
+ *                       example: 20
+ *                     accuracy_rate:
+ *                       type: number
+ *                       description: 정답률 (%)
+ *                       example: 80.0
+ *                 byTheme:
+ *                   type: array
+ *                   description: 테마별 통계
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       theme:
+ *                         type: string
+ *                         example: "A"
+ *                       total_in_theme:
+ *                         type: integer
+ *                         example: 10
+ *                       attempted_in_theme:
+ *                         type: integer
+ *                         example: 8
+ *                       solved_in_theme:
+ *                         type: integer
+ *                         example: 6
+ *       500:
+ *         description: 서버 오류
+ */
 app.get('/api/quiz-stats/:userId', async (req, res) => {
   const { userId } = req.params;
 
@@ -551,4 +933,11 @@ app.get('/api/quiz-stats/:userId', async (req, res) => {
 
 /* ----------------------- Start ---------------------- */
 const PORT = 4000;
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+const HOST = '0.0.0.0'; // 모든 네트워크 인터페이스에서 접속 허용
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server running at:`);
+  console.log(`- Local: http://localhost:${PORT}`);
+  console.log(`- Network: http://[your-ip]:${PORT}`);
+  console.log(`- Swagger UI: http://localhost:${PORT}/api-docs`);
+});
