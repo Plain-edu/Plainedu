@@ -413,9 +413,3 @@ test: add unit tests for quiz logic
 이 프로젝트를 개발하는 데 도움을 주신 모든 기여자분들께 감사드립니다.
 
 ---
-
-**📧 연락처**: [GitHub Issues](https://github.com/Plain-edu/Plainedu/issues)  
-**🌟 Star**: 이 프로젝트가 도움이 되었다면 ⭐ 스타를 눌러주세요!  
-**🐛 버그 리포트**: [Issues](https://github.com/Plain-edu/Plainedu/issues)에서 버그를 신고해주세요.
- 
- 
