@@ -343,6 +343,26 @@ curl http://localhost:4000/api/health
 # "Make Public" 버튼 클릭 필요할 수 있음
 ```
 
+#### 5. esbuild 플랫폼 호환성 문제 (Codespaces)
+GitHub Codespaces에서 다른 플랫폼용 esbuild가 설치된 경우:
+
+```bash
+# 프론트엔드 의존성 재설치
+cd front
+rm -rf node_modules package-lock.json
+npm install
+
+# 또는 esbuild만 재설치
+npm uninstall esbuild
+npm install esbuild
+
+# 개발 서버 재시작
+npm run dev
+```
+
+**원인**: Windows/macOS에서 설치된 node_modules가 Linux 환경(Codespaces)으로 복사될 때 발생
+**해결**: 대상 플랫폼에서 의존성을 새로 설치
+
 ### 로그 확인
 
 #### 백엔드 로그
