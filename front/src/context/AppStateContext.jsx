@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 
 const AppStateCtx = createContext(null);
@@ -28,8 +29,23 @@ export function AppStateProvider({ children }) {
   const addScore = (n) => setQuizState((prev) => ({ score: prev.score + n }));
   const resetScore = () => setQuizState({ score: 0 });
 
+  // 사용자 통계 로드
+  const loadUserStats = useCallback(async () => {
+    if (!auth?.userId) return;
+    
+    try {
+      const response = await fetch(`http://localhost:4000/api/quiz-stats/${auth.userId}`);
+      if (response.ok) {
+        const stats = await response.json();
+        setUserStats(stats);
+      }
+    } catch (error) {
+      console.error('통계 로드 실패:', error);
+    }
+  }, [auth?.userId]);
+
   // 퀴즈 결과를 백엔드에 저장
-  const saveQuizResult = async (theme, score, totalQuestions) => {
+  const saveQuizResult = useCallback(async (theme, score, totalQuestions) => {
     console.log('saveQuizResult 호출됨:', { theme, score, totalQuestions, userId: auth?.userId });
     
     if (!auth?.userId) {
@@ -74,22 +90,7 @@ export function AppStateProvider({ children }) {
       console.error('에러 스택:', error.stack);
       throw error;
     }
-  };
-
-  // 사용자 통계 로드
-  const loadUserStats = async () => {
-    if (!auth?.userId) return;
-    
-    try {
-      const response = await fetch(`http://localhost:4000/api/quiz-stats/${auth.userId}`);
-      if (response.ok) {
-        const stats = await response.json();
-        setUserStats(stats);
-      }
-    } catch (error) {
-      console.error('통계 로드 실패:', error);
-    }
-  };
+  }, [auth?.userId, loadUserStats]);
 
   const value = useMemo(
     () => ({
@@ -105,7 +106,7 @@ export function AppStateProvider({ children }) {
       saveQuizResult,
       loadUserStats,
     }),
-    [user, auth, quizState, userStats]
+    [user, auth, quizState, userStats, saveQuizResult, loadUserStats]
   );
   return <AppStateCtx.Provider value={value}>{children}</AppStateCtx.Provider>;
 }
