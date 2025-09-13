@@ -1,17 +1,3 @@
-<!-- markdownlint-disable MD032 -->
-<!-- markdownlint-disable MD022 -->
-<!-- markdownlint-disable MD051 -->
-<!-- markdownlint-disable MD040 -->
-<!-- markdownlint-disable MD031 -->
-<!-- markdownlint-disable MD033 -->
-<!-- markdownlint-disable MD041 -->
-<!-- markdownlint-disable MD013 -->
-<!-- markdownlint-disable MD025 -->
-<!-- markdownlint-disable MD012 -->
-<!-- markdownlint-disable MD034 -->
-<!-- markdownlint-disable MD024 -->
-<!-- markdownlint-disable MD047 -->
-
 # PlainEdu 🎓
 
 **금융 교육 플랫폼** - 퀴즈를 통한 인터랙티브 금융 학습 애플리케이션
