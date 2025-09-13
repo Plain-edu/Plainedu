@@ -139,6 +139,23 @@ Plainedu/
    - **Backend API**: `https://[codespace-name]-4000.app.github.dev`
    - **Swagger UI**: `https://[codespace-name]-4000.app.github.dev/api-docs`
 
+#### 🔧 백엔드만 실행 (Swagger UI 전용)
+
+API 개발이나 테스트를 위해 백엔드만 필요한 경우:
+
+```bash
+# 백엔드 서버만 시작
+chmod +x start-backend.sh
+./start-backend.sh
+
+# 서버 중지
+./stop-backend.sh
+```
+
+**접근 URL**:
+- **Backend API**: `https://[codespace-name]-4000.app.github.dev`
+- **Swagger UI**: `https://[codespace-name]-4000.app.github.dev/api-docs`
+
 ### 방법 2: 로컬 개발
 
 로컬 컴퓨터에서 개발하고 싶다면 이 방법을 사용하세요.
