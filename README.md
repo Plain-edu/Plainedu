@@ -8,115 +8,81 @@
 [![Swagger](https://img.shields.io/badge/API-Swagger-brightgreen?style=flat&logo=swagger)](https://swagger.io/)
 [![Codespaces](https://img.shields.io/badge/GitHub-Codespaces-purple?style=flat&logo=github)](https://github.com/features/codespaces)
 
-## 📚 목차
+## 목차
 
-- [프로젝트 소개](#-프로젝트-소개)
-- [주요 기능](#-주요-기능)
-- [기술 스택](#-기술-스택)
-- [빠른 시작](#-빠른-시작)
-- [프로젝트 구조](#-프로젝트-구조)
-- [API 문서](#-api-문서)
-- [개발 환경](#-개발-환경)
-- [문제 해결](#-문제-해결)
-- [기여하기](#-기여하기)
+- [프로젝트 소개](#프로젝트-소개)
+- [주요 기능](#주요-기능)
+- [기술 스택](#기술-스택)
+- [빠른 시작](#빠른-시작)
+- [프로젝트 구조](#프로젝트-구조)
+- [API 문서](#api-문서)
+- [개발 환경](#개발-환경)
+- [문제 해결](#문제-해결)
+- [기여하기](#기여하기)
 
-## 🎯 프로젝트 소개
+## 프로젝트 소개
 
 PlainEdu는 **금융 교육을 위한 현대적인 웹 플랫폼**입니다. 사용자들이 퀴즈를 통해 재미있게 금융 지식을 학습하고, 개인의 학습 진도를 체계적으로 관리할 수 있습니다.
 
-### ✨ 핵심 가치
+### 핵심 가치
+
 - 🎓 **교육 중심**: 체계적이고 실용적인 금융 교육 콘텐츠
 - 🎮 **상호작용**: 퀴즈와 게임을 통한 흥미로운 학습 경험
 - 📊 **데이터 기반**: 개인별 맞춤 학습 분석 및 진도 추적
 - 🌐 **접근성**: 언제 어디서나 쉽게 접근 가능한 클라우드 기반 플랫폼
 
-## 🚀 주요 기능
+## 주요 기능
 
-### 🎓 스마트 학습 시스템
+### 스마트 학습 시스템
+
 - **적응형 퀴즈**: 사용자 수준에 맞는 난이도 조절
 - **실시간 피드백**: 즉시 확인할 수 있는 정답 및 해설
 - **진도 관리**: 개인별 학습 현황과 성취도 추적
 - **뱃지 시스템**: 학습 목표 달성 시 획득할 수 있는 성취 배지
 
-### 👤 사용자 경험
+### 사용자 경험
+
 - **직관적 인터페이스**: 모던하고 사용하기 쉬운 UI/UX
 - **개인화 대시보드**: 맞춤형 학습 통계 및 추천
 - **소셜 기능**: 학습 성과 공유 및 친구와의 경쟁
 - **모바일 최적화**: 반응형 디자인으로 모든 기기에서 접근 가능
 
-### 🔧 관리자 도구
+### 관리자 도구
+
 - **콘텐츠 관리**: 퀴즈 문제 생성, 수정, 관리
 - **사용자 분석**: 학습 패턴 및 성과 분석 대시보드
 - **시스템 모니터링**: 실시간 서비스 상태 확인
 
-## 🛠 기술 스택
+## 기술 스택
 
-### 🎨 Frontend
+### Frontend
 - **React 18** - 현대적인 컴포넌트 기반 UI 라이브러리
 - **Vite** - 초고속 개발 서버 및 빌드 도구
 - **Tailwind CSS** - 유틸리티 퍼스트 CSS 프레임워크
 - **React Router DOM** - 싱글 페이지 애플리케이션 라우팅
 
-### ⚙️ Backend
+### Backend
 - **Node.js 16** - JavaScript 서버 런타임 (Codespaces 최적화)
 - **Express.js** - 경량화된 웹 애플리케이션 프레임워크
 - **MySQL2** - 고성능 관계형 데이터베이스
 - **bcrypt** - 안전한 패스워드 암호화
 - **CORS** - 크로스 오리진 리소스 공유 설정
 
-### 📚 API & Documentation
+### API & Documentation
 - **Swagger UI** - 인터랙티브 API 문서화 및 테스트 도구
 - **swagger-jsdoc** - JSDoc 주석 기반 OpenAPI 명세 생성
 - **swagger-ui-express** - Express 통합 Swagger 인터페이스
 
-### Development & Deployment
+### Development & DevOps
 - **GitHub Codespaces** - 클라우드 개발 환경
-- **Docker** - 컨테이너화
-- **devcontainer** - 개발 환경 표준화
+- **Docker** - 애플리케이션 컨테이너화
+- **devcontainer** - 표준화된 개발 컨테이너 설정
 
-## 📁 프로젝트 구조
 
-```
-Plainedu/
-├── 📁 front/                    # 프론트엔드 (React + Vite)
-│   ├── 📁 src/
-│   │   ├── 📁 components/       # 재사용 가능한 컴포넌트
-│   │   ├── 📁 pages/           # 페이지 컴포넌트
-│   │   ├── 📁 context/         # React Context (상태 관리)
-│   │   ├── 📁 assets/          # 이미지, 아이콘 등
-│   │   ├── App.jsx            # 메인 애플리케이션
-│   │   └── main.jsx           # 진입점
-│   ├── 📁 public/              # 정적 파일
-│   ├── package.json
-│   ├── vite.config.js
-│   └── tailwind.config.js
-│
-├── 📁 back/                     # 백엔드 (Node.js + Express)
-│   ├── 📁 server/
-│   │   └── index.cjs          # 메인 서버 파일
-│   ├── 📁 swagger/            # API 문서화
-│   │   ├── swagger.cjs        # Swagger 설정
-│   │   └── 📁 routes/         # 라우트별 API 문서
-│   └── package.json
-│
-├── 📁 SQL/                      # 데이터베이스 스키마
-│   ├── plaindb.sql            # 메인 데이터베이스 스키마
-│   └── README_plainDB.md      # 데이터베이스 문서
-│
-├── 📁 .devcontainer/           # 개발 컨테이너 설정
-│   └── devcontainer.json
-│
-├── 📁 .github/                 # GitHub 워크플로우
-│   └── pull_request_template.md
-│
-├── start-dev.sh               # 개발 서버 시작 스크립트
-├── CODESPACES_GUIDE.md       # Codespaces 사용 가이드
-└── README.md                 # 프로젝트 문서 (현재 파일)
-```
 
-## 🚀 빠른 시작
+## 빠른 시작
 
-### 🌟 GitHub Codespaces로 시작하기 (권장)
+### GitHub Codespaces로 시작하기 (권장)
 
 **Codespaces를 사용하면 브라우저만으로 즉시 개발을 시작할 수 있습니다.**
 
@@ -132,12 +98,6 @@ GitHub Repository → <> Code 버튼 → Codespaces 탭 → Create codespace on 
 - ✅ 포트 포워딩 자동 구성
 
 #### 3단계: 개발 서버 실행
-
-**전체 애플리케이션 실행:**
-```bash
-chmod +x start-dev.sh
-./start-dev.sh
-```
 
 **백엔드만 실행 (API 테스트용):**
 ```bash
@@ -166,7 +126,7 @@ chmod +x start-backend.sh
 kill [PID]
 ```
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 Plainedu/
@@ -210,9 +170,9 @@ Plainedu/
     └── pull_request_template.md
 ```
 
-## 📚 API 문서
+## API 문서
 
-### 🌐 Swagger UI 접근
+### Swagger UI 접근
 
 **GitHub Codespaces**: `https://[your-codespace]-4000.app.github.dev/api-docs`
 
@@ -258,9 +218,9 @@ GET  /api/user/:id/badges     # 획득 배지 조회
      -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
    ```
 
-## 🌐 개발 환경
+## 개발 환경
 
-### ✨ GitHub Codespaces의 장점
+### GitHub Codespaces의 장점
 
 - � **즉시 시작**: 브라우저만으로 개발 환경 완성
 - �🔧 **자동 구성**: devcontainer로 표준화된 개발 환경
@@ -287,7 +247,7 @@ echo "PORT=4000" >> back/.env
 - **Live Server**: 실시간 브라우저 업데이트
 - **Debug Mode**: VS Code 통합 디버깅 도구
 
-## 🔧 문제 해결
+## 문제 해결
 
 ### 일반적인 문제들
 
@@ -347,11 +307,11 @@ grep "ERROR" back/logs/app.log
 - Network 탭에서 API 호출 상태 확인
 - VS Code 터미널에서 Vite 로그 확인
 
-## 🤝 기여하기
+## 기여하기
 
 PlainEdu는 오픈소스 프로젝트입니다. 여러분의 기여를 환영합니다! 🎉
 
-### 🚀 기여 방법
+### 기여 방법
 
 #### 1단계: 프로젝트 Fork & Clone
 ```bash
