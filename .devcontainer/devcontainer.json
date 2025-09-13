@@ -1,10 +1,10 @@
 {
   "name": "Plainedu Development Environment",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:16",
   
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
+      "version": "16"
     },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
