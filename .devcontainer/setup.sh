@@ -23,11 +23,20 @@ mysql -h localhost -u root -pplain -e "SHOW DATABASES;" || echo "❌ MySQL conne
 
 # Verify plaindb database and tables
 echo "🔍 Verifying plaindb setup..."
-mysql -h localhost -u root -pplain -e "USE plaindb; SHOW TABLES;" | head -10
+TABLE_COUNT=$(mysql -h localhost -u root -pplain -e "USE plaindb; SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'plaindb';" -sN 2>/dev/null || echo "0")
+echo "📊 Found $TABLE_COUNT tables in plaindb database"
+
+if [ "$TABLE_COUNT" -gt "0" ]; then
+    echo "✅ Database initialization successful!"
+    mysql -h localhost -u root -pplain -e "USE plaindb; SHOW TABLES;" | head -5
+else
+    echo "❌ Database initialization may have failed"
+    echo "🔧 Checking init script status..."
+fi
 
 # Check if initialization script ran
-echo "📋 Checking database structure..."
-mysql -h localhost -u root -pplain -e "USE plaindb; SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'plaindb';" || echo "❌ Database verification failed"
+echo "📋 Checking database character set..."
+mysql -h localhost -u root -pplain -e "SHOW VARIABLES LIKE 'character_set%';" | grep utf8mb4 || echo "⚠️ Character set may need attention"
 
 # Create database if not exists (should be handled by docker-entrypoint-initdb.d)
 echo "📊 Database setup complete!"
