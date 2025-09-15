@@ -23,22 +23,14 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 /* -------------------- MySQL Pool -------------------- */
-// Codespaces 환경 감지 및 설정
-const isCodespaces = process.env.CODESPACE_NAME !== undefined;
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root', 
-  password: process.env.DB_PASSWORD || 'plain',
-  database: process.env.DB_NAME || 'plaindb',
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'plain',
+  database: 'plaindb',
   waitForConnections: true,
   connectionLimit: 10,
-};
-
-console.log(`🔧 Database Config: ${isCodespaces ? 'Codespaces' : 'Local'} mode`);
-console.log(`   Host: ${dbConfig.host}`);
-console.log(`   Database: ${dbConfig.database}`);
-
-const pool = mysql.createPool(dbConfig);
+});
 
 /* ------------------ Helper ------------------- */
 const mapGender = (g) => {

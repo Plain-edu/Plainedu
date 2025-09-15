@@ -9,32 +9,9 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🚀 PlainEdu 개발 환경을 시작합니다...${NC}"
 
-# Codespaces 환경 감지
-if [ -n "$CODESPACE_NAME" ]; then
-    echo -e "${YELLOW}📍 GitHub Codespaces 환경 감지됨${NC}"
-    BACKEND_URL="https://${CODESPACE_NAME}-4000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
-    FRONTEND_URL="https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
-    
-    # MySQL 연결 확인
-    echo -e "${YELLOW}🔍 MySQL 연결 확인 중...${NC}"
-    if ! mysqladmin ping -h localhost --silent; then
-        echo -e "${RED}❌ MySQL이 실행되지 않았습니다. Codespace를 재시작해주세요.${NC}"
-        exit 1
-    fi
-    
-    # Database 상태 확인
-    if ! mysql -h localhost -u root -pplain -e "USE plaindb; SELECT 1;" > /dev/null 2>&1; then
-        echo -e "${RED}❌ plaindb 데이터베이스에 연결할 수 없습니다.${NC}"
-        echo -e "${YELLOW}💡 해결방법: 컨테이너를 다시 빌드해주세요.${NC}"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}✅ MySQL 연결 확인됨${NC}"
-else
-    echo -e "${YELLOW}📍 로컬 개발 환경${NC}"
-    BACKEND_URL="http://localhost:4000"
-    FRONTEND_URL="http://localhost:5173"
-fi
+# 로컬 개발 환경 URL
+BACKEND_URL="http://localhost:4000"
+FRONTEND_URL="http://localhost:5173"
 
 echo -e "${GREEN}📡 백엔드 서버 시작 중...${NC}"
 

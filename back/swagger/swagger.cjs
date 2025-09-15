@@ -2,12 +2,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-// Codespaces 환경 감지
-const isCodespaces = process.env.CODESPACE_NAME !== undefined;
-const codespaceUrl = isCodespaces 
-  ? `https://${process.env.CODESPACE_NAME}-4000.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN || 'app.github.dev'}`
-  : 'http://localhost:4000';
-
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -27,10 +21,6 @@ const swaggerOptions = {
         - **Authentication**: JWT Token
         - **Documentation**: Swagger/OpenAPI 3.0
         
-        ### 🌐 환경
-        - **개발 서버**: ${codespaceUrl}
-        - **로컬 서버**: http://localhost:4000
-        
         ### 📖 사용법
         1. 회원가입 또는 로그인으로 인증
         2. API 엔드포인트별 기능 테스트
@@ -48,25 +38,9 @@ const swaggerOptions = {
       }
     },
     servers: [
-      ...(isCodespaces ? [
-        {
-          url: codespaceUrl,
-          description: 'GitHub Codespaces (현재 환경)'
-        }
-      ] : []),
       {
         url: 'http://localhost:4000',
         description: '로컬 개발 서버'
-      },
-      {
-        url: 'https://{codespace}-4000.app.github.dev',
-        description: 'GitHub Codespaces (수동 설정)',
-        variables: {
-          codespace: {
-            default: 'your-codespace-name',
-            description: 'Codespace 이름'
-          }
-        }
       }
     ],
     components: {
