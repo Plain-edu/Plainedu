@@ -29,6 +29,13 @@
     }
   },
 
+  "containerEnv": {
+    "DB_HOST": "localhost",
+    "DB_USER": "root",
+    "DB_PASSWORD": "plain",
+    "DB_NAME": "plaindb"
+  },
+
   "forwardPorts": [3000, 4000, 5173, 3306],
   "portsAttributes": {
     "3000": {

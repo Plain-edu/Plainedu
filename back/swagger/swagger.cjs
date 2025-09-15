@@ -12,12 +12,39 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Plainedu Quiz API',
+      title: 'Plainedu Quiz Platform API',
       version: '1.0.0',
-      description: 'Plain Education 퀴즈 애플리케이션 API 문서',
+      description: `
+        ## Plain Education 퀴즈 플랫폼 API 문서
+        
+        ### 📋 개요
+        Plain Education 퀴즈 플랫폼의 RESTful API 서비스입니다.
+        사용자 관리, 퀴즈 기능, 통계 및 뱃지 시스템을 제공합니다.
+        
+        ### 🔧 기술 스택
+        - **Backend**: Node.js + Express.js
+        - **Database**: MySQL 8.0
+        - **Authentication**: JWT Token
+        - **Documentation**: Swagger/OpenAPI 3.0
+        
+        ### 🌐 환경
+        - **개발 서버**: ${codespaceUrl}
+        - **로컬 서버**: http://localhost:4000
+        
+        ### 📖 사용법
+        1. 회원가입 또는 로그인으로 인증
+        2. API 엔드포인트별 기능 테스트
+        3. 응답 데이터 구조 확인
+      `,
+      termsOfService: 'https://plainedu.com/terms',
       contact: {
-        name: 'Plain Education Team',
-        email: 'support@plainedu.com'
+        name: 'Plain Education Development Team',
+        email: 'dev@plainedu.com',
+        url: 'https://plainedu.com/support'
+      },
+      license: {
+        name: 'MIT License',
+        url: 'https://opensource.org/licenses/MIT'
       }
     },
     servers: [
@@ -127,16 +154,73 @@ const swaggerSpecs = swaggerJsdoc(swaggerOptions);
 const swaggerUiOptions = {
   explorer: true,
   customCss: `
-    .swagger-ui .topbar { display: none }
-    .swagger-ui .info { margin: 20px 0 }
-    .swagger-ui .info .title { color: #3b82f6 }
+    .swagger-ui { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .swagger-ui .topbar { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 10px 0;
+    }
+    .swagger-ui .topbar .download-url-wrapper { display: none; }
+    .swagger-ui .info { 
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 4px solid #3b82f6;
+    }
+    .swagger-ui .info .title { 
+      color: #1e40af;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .swagger-ui .info .description {
+      color: #4b5563;
+      line-height: 1.6;
+    }
+    .swagger-ui .info .description h3 {
+      color: #1f2937;
+      margin-top: 20px;
+    }
+    .swagger-ui .scheme-container {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .swagger-ui .opblock { 
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .swagger-ui .opblock .opblock-summary { 
+      padding: 15px 20px;
+    }
+    .swagger-ui .btn.try-out { 
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+    }
+    .swagger-ui .btn.execute { 
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+    }
   `,
   customSiteTitle: 'Plainedu API Documentation',
   customfavIcon: '/favicon.ico',
   swaggerOptions: {
     persistAuthorization: true,
     tryItOutEnabled: true,
-    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
+    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+    docExpansion: 'list',
+    operationsSorter: 'alpha',
+    tagsSorter: 'alpha',
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true
   }
 };
 

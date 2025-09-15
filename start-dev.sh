@@ -21,6 +21,14 @@ if [ -n "$CODESPACE_NAME" ]; then
         echo -e "${RED}❌ MySQL이 실행되지 않았습니다. Codespace를 재시작해주세요.${NC}"
         exit 1
     fi
+    
+    # Database 상태 확인
+    if ! mysql -h localhost -u root -pplain -e "USE plaindb; SELECT 1;" > /dev/null 2>&1; then
+        echo -e "${RED}❌ plaindb 데이터베이스에 연결할 수 없습니다.${NC}"
+        echo -e "${YELLOW}💡 해결방법: 컨테이너를 다시 빌드해주세요.${NC}"
+        exit 1
+    fi
+    
     echo -e "${GREEN}✅ MySQL 연결 확인됨${NC}"
 else
     echo -e "${YELLOW}📍 로컬 개발 환경${NC}"

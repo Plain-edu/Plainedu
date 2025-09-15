@@ -21,6 +21,14 @@ cd /workspaces/Plainedu/front && npm install
 echo "🔧 Testing MySQL connection..."
 mysql -h localhost -u root -pplain -e "SHOW DATABASES;" || echo "❌ MySQL connection failed"
 
+# Verify plaindb database and tables
+echo "🔍 Verifying plaindb setup..."
+mysql -h localhost -u root -pplain -e "USE plaindb; SHOW TABLES;" | head -10
+
+# Check if initialization script ran
+echo "📋 Checking database structure..."
+mysql -h localhost -u root -pplain -e "USE plaindb; SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'plaindb';" || echo "❌ Database verification failed"
+
 # Create database if not exists (should be handled by docker-entrypoint-initdb.d)
 echo "📊 Database setup complete!"
 
