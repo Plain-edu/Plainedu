@@ -1,6 +1,8 @@
 {
-  "name": "Plainedu Development Environment",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:16",
+  "name": "Plainedu Development Environment with MySQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/Plainedu",
   
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
@@ -13,35 +15,42 @@
     "vscode": {
       "extensions": [
         "ms-vscode.vscode-json",
-        "bradlc.vscode-tailwindcss",
+        "bradlc.vscode-tailwindcss", 
         "esbenp.prettier-vscode",
         "ms-vscode.vscode-typescript-next",
         "formulahendry.auto-rename-tag",
-        "christian-kohler.path-intellisense"
+        "christian-kohler.path-intellisense",
+        "ms-vscode.hexeditor"
       ],
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true
       }
     }
   },
 
-  "forwardPorts": [3000, 4000, 5173],
+  "forwardPorts": [3000, 4000, 5173, 3306],
   "portsAttributes": {
     "3000": {
-      "label": "Frontend Dev Server",
+      "label": "Frontend (Alternative)",
       "onAutoForward": "notify"
     },
     "4000": {
-      "label": "Backend API Server",
+      "label": "Backend API",
       "onAutoForward": "notify"
     },
     "5173": {
-      "label": "Vite Dev Server",
+      "label": "Vite Dev Server", 
       "onAutoForward": "notify"
+    },
+    "3306": {
+      "label": "MySQL Database",
+      "onAutoForward": "ignore"
     }
   },
 
-  "postCreateCommand": "npm install --prefix ./back && npm install --prefix ./front",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "echo '🚀 PlainEdu Codespace with MySQL is ready! Use: ./start-dev.sh'",
   
-  "remoteUser": "node"
+  "remoteUser": "vscode"
 }
