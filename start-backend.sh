@@ -26,18 +26,8 @@ if ps -p $BACKEND_PID > /dev/null; then
     echo -e "${GREEN}✅ 백엔드 서버가 성공적으로 시작되었습니다!${NC}"
     echo ""
     echo -e "${YELLOW}📍 접근 URL:${NC}"
-    
-    # Codespaces 환경인지 확인
-    if [ -n "$CODESPACE_NAME" ]; then
-        # GitHub Codespaces 환경
-        BACKEND_URL="https://${CODESPACE_NAME}-4000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
-        echo -e "  📡 ${BLUE}Backend API: ${BACKEND_URL}${NC}"
-        echo -e "  📚 ${BLUE}Swagger UI: ${BACKEND_URL}/api-docs${NC}"
-    else
-        # 로컬 환경
-        echo -e "  📡 ${BLUE}Backend API: http://localhost:4000${NC}"
-        echo -e "  📚 ${BLUE}Swagger UI: http://localhost:4000/api-docs${NC}"
-    fi
+    echo -e "  📡 ${BLUE}Backend API: http://localhost:4000${NC}"
+    echo -e "  📚 ${BLUE}Swagger UI: http://localhost:4000/api-docs${NC}"
     
     echo ""
     echo -e "${YELLOW}🔧 서버 관리:${NC}"
