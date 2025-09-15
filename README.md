@@ -86,10 +86,24 @@ PlainEdu는 **금융 교육을 위한 현대적인 웹 플랫폼**입니다. 사
 
 **Codespaces를 사용하면 브라우저만으로 즉시 개발을 시작할 수 있습니다.**
 
-#### 1단계: Codespace 생성
+#### 🎯 브랜치 선택
+
+**Option 1: 기본 환경 (현재 권장)**
 ```
 GitHub Repository → <> Code 버튼 → Codespaces 탭 → Create codespace on main
 ```
+- ✅ 빠른 시작 (API 기능만 테스트)
+- ⚠️ MySQL 없음 (일부 API에서 데이터베이스 오류 발생)
+
+**Option 2: 완전한 환경 (MySQL 포함) - 개발 중**
+```
+GitHub Repository → <> Code 버튼 → Codespaces 탭 → Create codespace on feature/codespaces-mysql
+```
+- ✅ MySQL 포함 완전한 개발 환경
+- ✅ 모든 API 정상 작동
+- ⏳ 초기 설정 시간 더 소요 (약 5분)
+
+#### 1단계: Codespace 생성
 
 #### 2단계: 자동 환경 구성 대기 (약 2-3분)
 - ✅ Node.js 16 자동 설치
