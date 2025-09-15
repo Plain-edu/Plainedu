@@ -2,6 +2,12 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
+// Codespaces 환경 감지
+const isCodespaces = process.env.CODESPACE_NAME !== undefined;
+const codespaceUrl = isCodespaces 
+  ? `https://${process.env.CODESPACE_NAME}-4000.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN || 'app.github.dev'}`
+  : 'http://localhost:4000';
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -15,17 +21,23 @@ const swaggerOptions = {
       }
     },
     servers: [
+      ...(isCodespaces ? [
+        {
+          url: codespaceUrl,
+          description: 'GitHub Codespaces (현재 환경)'
+        }
+      ] : []),
       {
         url: 'http://localhost:4000',
         description: '로컬 개발 서버'
       },
       {
-        url: 'http://{host}:4000',
-        description: '네트워크 서버',
+        url: 'https://{codespace}-4000.app.github.dev',
+        description: 'GitHub Codespaces (수동 설정)',
         variables: {
-          host: {
-            default: 'localhost',
-            description: '서버 IP 주소'
+          codespace: {
+            default: 'your-codespace-name',
+            description: 'Codespace 이름'
           }
         }
       }
@@ -120,7 +132,12 @@ const swaggerUiOptions = {
     .swagger-ui .info .title { color: #3b82f6 }
   `,
   customSiteTitle: 'Plainedu API Documentation',
-  customfavIcon: '/favicon.ico'
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    tryItOutEnabled: true,
+    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
+  }
 };
 
 module.exports = {
