@@ -393,43 +393,10 @@ app.post('/api/ranking', async (req, res) => {
  *       500:
  *         description: 서버 오류
  * 
- * /api/quizzes/{theme}:
- *   get:
- *     summary: 특정 테마 퀴즈 조회
- *     tags: [Quiz]
- *     description: 특정 테마의 퀴즈 문제들을 조회합니다.
- *     parameters:
- *       - in: path
- *         name: theme
- *         required: true
- *         schema:
- *           type: string
- *         description: 퀴즈 테마
- *         example: "A"
- *     responses:
- *       200:
- *         description: 퀴즈 목록 조회 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 theme:
- *                   type: string
- *                   example: "A"
- *                 count:
- *                   type: integer
- *                   example: 10
- *                 items:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Question'
- *       500:
- *         description: 서버 오류
  */
-// 예: /api/quizzes?theme=A  또는  /api/quizzes/A
-app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
-  const theme = (req.params.theme || req.query.theme || 'A').toUpperCase();
+// 예: /api/quizzes?theme=A
+app.get('/api/quizzes', async (req, res) => {
+  const theme = (req.query.theme || 'A').toUpperCase();
   let conn;
   try {
     conn = await pool.getConnection();
@@ -440,7 +407,12 @@ app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
       SELECT
         q.question_id AS id,
         q.theme,
-        q.difficulty,
+        CASE q.difficulty
+        WHEN 0 THEN 'beginner'
+        WHEN 1 THEN 'intermediate'
+        WHEN 2 THEN 'advanced' -- 예시로 2 레벨 추가
+        ELSE 'unknown'      -- 0, 1, 2가 아닌 다른 값일 경우
+        END AS difficulty,
         tf.question_text AS question,
         JSON_UNQUOTE(JSON_EXTRACT(tf.correct_answer, '$.answer'))      AS answer,
         JSON_UNQUOTE(JSON_EXTRACT(tf.correct_answer, '$.explanation')) AS explanation,
@@ -459,7 +431,12 @@ app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
       SELECT
         q.question_id AS id,
         q.theme,
-        q.difficulty,
+        CASE q.difficulty
+        WHEN 0 THEN 'beginner'
+        WHEN 1 THEN 'intermediate'
+        WHEN 2 THEN 'advanced' -- 예시로 2 레벨 추가
+        ELSE 'unknown'      -- 0, 1, 2가 아닌 다른 값일 경우
+        END AS difficulty,
         mc.question_text AS question,
         mc.image_url,
         mc.choice_1, mc.choice_2, mc.choice_3,
@@ -512,7 +489,12 @@ app.get(['/api/quizzes', '/api/quizzes/:theme'], async (req, res) => {
       SELECT
         q.question_id AS id,
         q.theme,
-        q.difficulty,
+        CASE q.difficulty
+        WHEN 0 THEN 'beginner'
+        WHEN 1 THEN 'intermediate'
+        WHEN 2 THEN 'advanced' -- 예시로 2 레벨 추가
+        ELSE 'unknown'      -- 0, 1, 2가 아닌 다른 값일 경우
+        END AS difficulty,
         q.points,
         JSON_UNQUOTE(JSON_EXTRACT(m.items,'$')) AS items_json   -- 문자열로 뽑기(안전)
       FROM questions q
